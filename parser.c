@@ -12,6 +12,7 @@ FILE *tokenFile;
 char line[MAX_LINE_LENGTH];
 enum token_list token;
 char lexeme[MAX_LEXEME_LENGTH];
+int end = 0;
 
 void GetNextToken();
 void expression();
@@ -27,12 +28,14 @@ void digit();
 int main() {
     tokenFile = fopen("tokens.txt", "r");
 
-    if (tokenFile == NULL) {
+    if (!tokenFile) {
         fprintf(stderr, "Cannot open file!\n");
         return 1;
     }
 
-    GetNextToken();
+    while (end != 1) {
+        GetNextToken();
+    }
 
 
     return 0;
@@ -43,15 +46,24 @@ void GetNextToken() {
     char inputToken[MAX_TOKEN_LENGTH];
     const char *commaPointer;
 
-    // Pull the line and find the comma position
-    fgets(line, sizeof(line), tokenFile);
-    commaPointer = strchr(line, ',');
+    // Pull the line
+    if (fgets(line, sizeof(line), tokenFile) == NULL) {
+        // The end of the file has been reached
+        if (feof(tokenFile)) {
+            end = 1;
+        } else if (ferror(tokenFile)) {
+            fprintf(stderr, "Error reading file\n");
+            return;
+        }
+    }
 
+
+    // Find comma position
+    commaPointer = strchr(line, ',');
     if (commaPointer == NULL) {
         fprintf(stderr, "There is no comma\n");
         return;
     }
-
 
     // Pull lexeme and token
     strncpy(lexeme, line, strlen(line) - strlen(commaPointer));
