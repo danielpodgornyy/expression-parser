@@ -1,0 +1,10 @@
+5, integer
+7, integer
+*, multiply_operator
+2, integer
+-, minus_operator
+(, left_parenthesis
+3, integer
++, plus_operator
+4, integer
+), right_parenthesis
