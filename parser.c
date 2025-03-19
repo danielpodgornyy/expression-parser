@@ -5,90 +5,163 @@
 #define MAX_LINE_LENGTH 100  
 #define MAX_TOKEN_LENGTH 50
 #define MAX_LEXEME_LENGTH 50
+#define MAX_NUM_LEXEMES 80
 
 enum token_list {INTEGER, MINUS_OPERATOR, PLUS_OPERATOR, MULTIPLY_OPERATOR, DIVIDE_OPERATOR, LEFT_PARENTHESIS, RIGHT_PARENTHESIS};
 
+struct lexeme {
+    char value[MAX_NUM_LEXEMES];
+    char token[MAX_TOKEN_LENGTH];
+};
+
+// Abstract Syntax Tree (AST) Node
+struct ASTNode {
+    struct lexeme* lex;
+    struct ASTNode* left;
+    struct ASTNode* right;
+};
+
+
 FILE *tokenFile;
 char line[MAX_LINE_LENGTH];
-enum token_list token;
-char lexeme[MAX_LEXEME_LENGTH];
-int end = 0;
+struct lexeme lexeme_list[MAX_LEXEME_LENGTH];
+struct lexeme* currLexeme;
+int currLexemePos = 0;
+int numLexemes = 0;
 
-void GetNextToken();
-void expression();
-void expression_suffix();
-void term();
-void term_suffix();
-void factor();
-void integer();
-void integer_suffix();
-void digit();
+void ParseLexemes();
+void GetNextLexeme();
+void PrintTree();
+
+struct ASTNode* expression();
+//void expression_suffix();
+struct ASTNode* term();
+//void term_suffix();
+struct ASTNode* factor();
+//void integer();
+//void integer_suffix();
+//void digit();
 
 
 int main() {
     tokenFile = fopen("tokens.txt", "r");
-
     if (!tokenFile) {
-        fprintf(stderr, "Cannot open file!\n");
-        return 1;
+        fprintf(stderr, "Error: Cannot open file!\n");
+        exit(1);
     }
 
-    while (end != 1) {
-        GetNextToken();
+    ParseLexemes();
+
+    for (int i = 0; i < numLexemes; i++) {
+        printf("%s %s\n", lexeme_list[i].value, lexeme_list[i].token);
     }
 
+    struct ASTNode* AST = expression();
 
+    //PrintTree();
+
+    fclose(tokenFile);
     return 0;
 }
 
-// Updates global lexeme and token type
-void GetNextToken() {
-    char inputToken[MAX_TOKEN_LENGTH];
-    const char *commaPointer;
+// Reads expression tokens and updates global lexeme_array
+void ParseLexemes() {
+    // Read each line individually
+    while (fgets(line, sizeof(line), tokenFile)) {
+        const char *commaPointer;
 
-    // Pull the line
-    if (fgets(line, sizeof(line), tokenFile) == NULL) {
-        // The end of the file has been reached
-        if (feof(tokenFile)) {
-            end = 1;
-        } else if (ferror(tokenFile)) {
-            fprintf(stderr, "Error reading file\n");
-            return;
+        // Find comma position
+        commaPointer = strchr(line, ',');
+        if (commaPointer == NULL) {
+            fprintf(stderr, "Error: There is no comma\n");
+            exit(1);
         }
+
+        // Pull lexeme and set it
+        strncpy(lexeme_list[currLexemePos].value, line, strlen(line) - strlen(commaPointer));
+        lexeme_list[currLexemePos].value[strlen(lexeme_list[currLexemePos].value)] = '\0';  // Make sure that it has null temination
+
+        // Pull token and set it
+        strncpy(lexeme_list[currLexemePos].token, commaPointer + 2, MAX_TOKEN_LENGTH);
+        lexeme_list[currLexemePos].token[strlen(lexeme_list[currLexemePos].token) - 1] = '\0'; //Ensure null termination and remove newline
+        
+        // Iterate to the next position
+        currLexemePos++;
     }
 
+    // Get number of lexemes and reset the token position
+    numLexemes = currLexemePos;
+    currLexemePos = 0;
 
-    // Find comma position
-    commaPointer = strchr(line, ',');
-    if (commaPointer == NULL) {
-        fprintf(stderr, "There is no comma\n");
-        return;
+    if (ferror(tokenFile)) {
+        fprintf(stderr, "Error: Issue reading file\n");
+        exit(1);
     }
+}
 
-    // Pull lexeme and token
-    strncpy(lexeme, line, strlen(line) - strlen(commaPointer));
-    strncpy(inputToken, commaPointer + 2, MAX_TOKEN_LENGTH);
-    inputToken[MAX_TOKEN_LENGTH - 1] = '\n';
-
-    // Convert token to enum representation
-    if (strcmp(inputToken, "integer\n") == 0) {
-        token = INTEGER;
-    } else if (strcmp(inputToken, "minus_operator\n") == 0) {
-        token = MINUS_OPERATOR;
-    } else if (strcmp(inputToken, "plus_operator\n") == 0) {
-        token = PLUS_OPERATOR;
-    } else if (strcmp(inputToken, "multiply_operator\n") == 0) {
-        token = MULTIPLY_OPERATOR;
-    } else if (strcmp(inputToken, "divide_operator\n") == 0) {
-        token = DIVIDE_OPERATOR;
-    } else if (strcmp(inputToken, "left_parenthesis\n") == 0) {
-        token = LEFT_PARENTHESIS;
-    } else if (strcmp(inputToken, "right_parenthesis\n") == 0) {
-        token = RIGHT_PARENTHESIS;
+void GetNextLexeme() {
+    // If we still have lexemes left set it, else set NULL
+    if (currLexemePos < numLexemes) {
+        currLexeme = &lexeme_list[currLexemePos];
+        currLexemePos++;
     } else {
-        fprintf(stderr, "Invalid token type\n");
-        return;
+        currLexeme = NULL;
     }
-    
-    printf("%s\n%d\n", lexeme, token);
+}
+
+struct ASTNode* expression () {
+    struct ASTNode* node = term();
+    /*
+    while (currentToken < tokens.size() && (tokens[currentToken].value == "+" || tokens[currentToken].value == "-")) {
+        string op = tokens[currentToken].value;
+        getToken();  // Consume operator
+        ASTNode* right = term();
+        ASTNode* newNode = new ASTNode(op);
+        newNode->left = node;
+        newNode->right = right;
+        node = newNode;
+    }
+    */
+    return node;
+}
+
+struct ASTNode* term() {
+    struct ASTNode* node = factor();
+   /* 
+    while (currentToken < tokens.size() && (tokens[currentToken].value == "*" || tokens[currentToken].value == "/")) {
+        string op = tokens[currentToken].value;
+        getToken();  // Consume operator
+        ASTNode* right = factor();
+        ASTNode* newNode = new ASTNode(op);
+        newNode->left = node;
+        newNode->right = right;
+        node = newNode;
+    }
+
+    */
+    return node;
+}
+
+struct ASTNode* factor() {
+    GetNextLexeme();
+    if (currLexeme == NULL) {
+        fprintf(stderr, "Error: Unexpected end of input\n");
+        exit(1);
+    }
+
+    if (strcmp(currLexeme->token, "integer") == 0) {
+        struct ASTNode* tempNode = (struct ASTNode*)malloc(sizeof(struct ASTNode));
+        tempNode->lex = currLexeme;
+    } else if (strcmp(currLexeme->value, "(") == 0) {
+        struct ASTNode* node = expression();
+        if (strcmp(currLexeme->value, "(") == 0) {
+            GetNextLexeme();  // Consume ')'
+        } else {
+            fprintf(stderr,"Error: Missing closing parenthesis\n");
+            exit(1);
+        }
+        return node;
+    }
+    fprintf(stderr,"Error: Invalid syntax\n");
+    exit(1);
 }
