@@ -136,20 +136,23 @@ struct ASTNode* expression() {
 
 struct ASTNode* term() {
     struct ASTNode* node = factor();
-   /* 
-    while (currentToken < tokens.size() && (tokens[currentToken].value == "*" || tokens[currentToken].value == "/")) {
-        string op = tokens[currentToken].value;
+   
+    while (currLexeme != NULL && (strcmp(currLexeme->value, "*") == 0 || strcmp(currLexeme->value, "/") == 0)) {
         getToken();  // Consume operator
-        ASTNode* right = factor();
-        ASTNode* newNode = new ASTNode(op);
-        newNode->left = node;
-        newNode->right = right;
-        node = newNode;
+        struct ASTNode* right = factor();
+        struct ASTNode* tempNode = (struct ASTNode*)malloc(sizeof(struct ASTNode));
+        tempNode->lex = currLexeme;
+        
+        tempNode->left = node;
+        tempNode->right = right;
+        node = tempNode;
     }
 
-    */
+    
     return node;
 }
+
+
 struct ASTNode* factor() {
     GetNextLexeme();
     
