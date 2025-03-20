@@ -3,7 +3,7 @@ FILE *outputFile = fopen("tokens.txt", "w");
 %}
 
 %%
-[0-9] {fprintf(outputFile, "%s, integer\n", yytext);}
+[0-9]+ {fprintf(outputFile, "%s, integer\n", yytext);}
 [-] {fprintf(outputFile, "%s, minus_operator\n", yytext);}
 [+] {fprintf(outputFile, "%s, plus_operator\n", yytext);}
 [*] {fprintf(outputFile, "%s, multiply_operator\n", yytext);}
