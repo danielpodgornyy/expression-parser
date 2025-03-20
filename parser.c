@@ -7,8 +7,6 @@
 #define MAX_LEXEME_LENGTH 50
 #define MAX_NUM_LEXEMES 80
 
-enum token_list {INTEGER, MINUS_OPERATOR, PLUS_OPERATOR, MULTIPLY_OPERATOR, DIVIDE_OPERATOR, LEFT_PARENTHESIS, RIGHT_PARENTHESIS};
-
 struct lexeme {
     char value[MAX_NUM_LEXEMES];
     char token[MAX_TOKEN_LENGTH];
@@ -31,7 +29,7 @@ int numLexemes = 0;
 
 void ParseLexemes();
 void GetNextLexeme();
-void PrintTree();
+void PrintAST(struct ASTNode* root, int depth);
 
 struct ASTNode* expression();
 //void expression_suffix();
@@ -58,7 +56,7 @@ int main() {
 
     struct ASTNode* AST = expression();
 
-    //PrintTree();
+    PrintAST(AST, 0);
 
     fclose(tokenFile);
     return 0;
@@ -109,21 +107,32 @@ void GetNextLexeme() {
     }
 }
 
-struct ASTNode* expression () {
-    struct ASTNode* node = term();
-    /*
-    while (currentToken < tokens.size() && (tokens[currentToken].value == "+" || tokens[currentToken].value == "-")) {
-        string op = tokens[currentToken].value;
-        getToken();  // Consume operator
-        ASTNode* right = term();
-        ASTNode* newNode = new ASTNode(op);
-        newNode->left = node;
-        newNode->right = right;
-        node = newNode;
-    }
-    */
-    return node;
+void PrintAST(struct ASTNode* root, int depth) {
+    if (!root) return;
+    for (int i = 0; i < depth; i++) printf("    ");
+    printf("%s\n", root->lex->value);
+    printAST(root->left, depth + 1);
+    printAST(root->right, depth + 1);
 }
+
+struct ASTNode* expression() {
+    struct ASTNode* left = term();
+
+    while (currLexeme != NULL && (strcmp(currLexeme->value, "+") == 0 || strcmp(currLexeme->value, "-") == 0)) {
+        struct ASTNode* tempNode = (struct ASTNode*)malloc(sizeof(struct ASTNode));
+        tempNode->lex = currLexeme;
+
+        GetNextLexeme();
+        struct ASTNode* right = term();
+
+        tempNode->left = left;
+        tempNode->right = right;
+        left = tempNode;  // Update left to keep building the tree
+    }
+
+    return left;  // Always return the root of the expression tree
+}
+
 
 struct ASTNode* term() {
     struct ASTNode* node = factor();
@@ -141,9 +150,9 @@ struct ASTNode* term() {
     */
     return node;
 }
-
 struct ASTNode* factor() {
     GetNextLexeme();
+    
     if (currLexeme == NULL) {
         fprintf(stderr, "Error: Unexpected end of input\n");
         exit(1);
@@ -152,16 +161,22 @@ struct ASTNode* factor() {
     if (strcmp(currLexeme->token, "integer") == 0) {
         struct ASTNode* tempNode = (struct ASTNode*)malloc(sizeof(struct ASTNode));
         tempNode->lex = currLexeme;
+        tempNode->left = NULL;
+        tempNode->right = NULL;  // Initialize child nodes to NULL
+        return tempNode;
     } else if (strcmp(currLexeme->value, "(") == 0) {
         struct ASTNode* node = expression();
-        if (strcmp(currLexeme->value, "(") == 0) {
-            GetNextLexeme();  // Consume ')'
-        } else {
-            fprintf(stderr,"Error: Missing closing parenthesis\n");
+
+        GetNextLexeme();  // Consume next token to check for ')'
+        if (currLexeme == NULL || strcmp(currLexeme->value, ")") != 0) {
+            fprintf(stderr, "Error: Missing closing parenthesis\n");
             exit(1);
         }
+
         return node;
     }
-    fprintf(stderr,"Error: Invalid syntax\n");
+
+    fprintf(stderr, "Error: Invalid syntax\n");
     exit(1);
 }
+
