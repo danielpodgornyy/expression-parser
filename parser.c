@@ -138,7 +138,7 @@ struct ASTNode* term() {
     struct ASTNode* node = factor();
    
     while (currLexeme != NULL && (strcmp(currLexeme->value, "*") == 0 || strcmp(currLexeme->value, "/") == 0)) {
-        getToken();  // Consume operator
+        GetNextLexeme();  // Consume operator
         struct ASTNode* right = factor();
         struct ASTNode* tempNode = (struct ASTNode*)malloc(sizeof(struct ASTNode));
         tempNode->lex = currLexeme;
