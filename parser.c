@@ -135,21 +135,21 @@ struct ASTNode* expression() {
 
 
 struct ASTNode* term() {
-    struct ASTNode* node = factor();
+    struct ASTNode* left = factor();
    
     while (currLexeme != NULL && (strcmp(currLexeme->value, "*") == 0 || strcmp(currLexeme->value, "/") == 0)) {
         struct ASTNode* tempNode = (struct ASTNode*)malloc(sizeof(struct ASTNode));
         tempNode->lex = currLexeme;
-        
+
         GetNextLexeme();  // Consume operator
         struct ASTNode* right = factor();
-        tempNode->left = node;
+        tempNode->left = left;
         tempNode->right = right;
-        node = tempNode;
+        left = tempNode;
     }
 
     
-    return node;
+    return left;
 }
 
 
